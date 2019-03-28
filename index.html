@@ -1,0 +1,228 @@
+<!DOCTYPE html><html><head>
+  	<title>Leaflet Exercise</title>
+  	<meta charset="utf-8">
+
+  	<!-- Leaflet styles and code. Place in the <head></head> element. -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css">	
+  	<script src="leaflet.js"></script>
+
+  	<!-- jQuery is a library that simplifies many things in JavaScript. 
+  	     We'll use it to retrieve data from the web. -->   
+  	<script src="jquery-3.3.1.min.js"></script>	
+  	
+  </head>
+  <body>
+
+    <div id="mapid" style="width: 600px; height: 400px;"></div>
+  	<!-- Our web map will get placed into this div element -->
+
+    <div id="controls" style="margin: 15px;">
+      <button id="showAllCountiesButton">Show All Counties</button>
+
+      <span style="display:inline-block; width: 30px"></span>
+      <input type="text" id="highlightCountiesTextEntry" placeholder="County name">
+      <button id="highlightCountiesButton">Highlight</button>
+      
+  	</div>
+  	<!-- Our web map will get placed into this div element -->
+
+    <script>
+      
+      // Make a Leaflet map with L.map().
+      // Store the map in the variable 'map'.
+      // "mapid" is the 'id' of the DOM element to contain the map.
+      var map = L.map('mapid',
+                      { 
+        								center: [27.458823, -84.522754],
+        								zoom: 6
+      								}  // this object holds map options
+                );
+      
+  		var topoTiles = L.tileLayer(
+        								'https://tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png',
+                        {
+  												maxZoom: 17,
+  												attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  											}
+  										).addTo(map);
+
+        
+      function getColor(D) {
+        //console.log(D);
+        if (D===0 || D===1 || D===2 || D===3)
+          return'#FFEDA0';
+        else if (D===4 || D===5 || D===6 || D===7)
+          return '#FED976';
+        else if (D===8 || D===9 || D===10 || D===11)
+          return '#FEB24C';
+        else if (D===12 || D===13 || D===14 || D===15)
+          return '#FD8D3C';
+        else if (D===16 || D===17 || D===18 || D===19)
+          return '#FC4E2A';
+        else if (D===20 || D===21 || D===22 || D===23)
+          return '#E31A1C';
+        else 
+          return '#BD0026';
+  }
+      
+      function style(feature) {
+          console.log('style1');
+      return {
+  	    
+          fillColor:getColor(feature.properties["florida.csv.DISAST_DECL"]),
+          weight: 2,
+          opacity: 1,
+          color: 'white',
+          dashArray: '3',
+          fillOpacity: 0.7
+      };
+  }
+      var info = L.control();
+
+  info.onAdd = function (map) {
+      this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+      this.update();
+      return this._div;
+  };
+
+  // method that we will use to update the control based on feature properties passed
+  info.update = function (props) {
+      this._div.innerHTML = '<h4>Hurricanes since 1954</h4>' +  (props ?
+          '<b>' + props["Florida_Counties.COUNTYNAME"] + '</b><br />' + props["florida.csv.DISAST_DECL"] + ' disaster declarations'
+          : 'Hover over a county');
+  };
+
+  info.addTo(map);
+        function highlightFeature(e) {
+        var layer = e.target;
+
+      layer.setStyle({
+          weight: 5,
+          color: '#666',
+          dashArray: '',
+          fillOpacity: 0.7
+      });
+
+      if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+          layer.bringToFront();
+      }
+     info.update(layer.feature.properties);      
+  }
+      
+      function resetHighlight(e) {
+      geojson.resetStyle(e.target);
+        info.update();
+  }
+      function zoomToFeature(e) {
+      map.fitBounds(e.target.getBounds());
+  }
+      function onEachFeature(feature, layer) {
+      layer.on({
+          mouseover: highlightFeature,
+          mouseout: resetHighlight,
+          click: zoomToFeature
+      });
+        
+
+  }
+      var countiToHighlight = "";
+      function highlight_spec (){
+        countiToHighlight = document.getElementById("highlightCountiesTextEntry").value; 
+        countiToHighlight= countiToHighlight.toUpperCase();
+       // console.log( countiToHighlight);
+        addspec(); 
+        countiToHighlight = "";  
+      
+      
+      }
+      var all_layer={};
+       function highlight_all (){
+         
+        if(map.hasLayer(all_layer)){ 
+          map.removeLayer(all_layer);
+        console.log('es');
+        }
+         if(map.hasLayer(geojson)){ 
+          map.removeLayer(geojson);
+        console.log('es');
+        }
+       all_layer = L.geoJSON(data_geo,{style: style, onEachFeature:onEachFeature}).addTo(map);
+       
+        
+      
+      }
+      var last_layer ={};
+      function addspec(data) {
+      console.log('s');
+      if(map.hasLayer(last_layer)){ 
+          map.removeLayer(last_layer);
+        console.log('es');
+        }
+       last_layer = L.geoJSON(data_geo,{style: style_2, onEachFeature:onEachFeature}).addTo(map);
+       
+      }
+      function style_2(feature) {
+          //console.log(feature.properties);
+          var color;
+       // console.log(feature.properties["Florida_Counties.COUNTYNAME"]);
+        if(countiToHighlight == "")
+          color=getColor(feature.properties["florida.csv.DISAST_DECL"]);
+        else if(countiToHighlight== feature.properties["Florida_Counties.COUNTYNAME"])
+          color= getColor(feature.properties["florida.csv.DISAST_DECL"]);
+        else
+          color= '#FFFFFF';
+      return {
+  	    
+          fillColor:color,
+          weight: 2,
+          opacity: 1,
+          color: 'white',
+          dashArray: '3',
+          fillOpacity: 0.7
+      };
+  }
+    var geojson;
+      var data_geo;
+          $.getJSON("https://raw.githubusercontent.com/scalia16/final-project/master/map.geojson",
+                function(data){ 
+                geojson= L.geoJSON(data,{style: style_2,onEachFeature:  onEachFeature}).addTo(map);
+                  data_geo=data;
+            
+                document
+                    .getElementById("showAllCountiesButton")
+                    .addEventListener("click",highlight_all);
+        					
+        					document
+                    .getElementById("highlightCountiesButton")
+                    .addEventListener("click",highlight_spec);
+          }
+          );
+      
+             
+      var legend = L.control({position: 'bottomleft'});
+
+  		legend.onAdd = function (map) {
+
+      var div = L.DomUtil.create('div', 'info legend'),
+          grades = [0, 4, 8, 12, 16, 20, 24],
+          labels = ["D<4",
+                    "D<8",
+                    "D<12",
+                    "D<16",
+                    "D<20",
+                    "D<24",
+                    "D>24"];
+
+      for (var i = 0; i < grades.length; i++) {
+          div.innerHTML +=
+              '<i style="background:' + getColor(grades[i]) + '">&nbsp;</i>&nbsp;'+labels[i] + '<br/>';}
+
+      return div;
+  		};
+      legend.addTo(map);
+      
+      
+          
+    </script>
+    
+  </body></html>
